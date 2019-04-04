@@ -1,6 +1,8 @@
 defmodule TeslaApi.Vehicle do
   import TeslaApi
 
+  alias TeslaApi.{Error, Auth}
+
   @type id() :: integer()
   @type vehicle_id :: integer()
 
@@ -29,8 +31,8 @@ defmodule TeslaApi.Vehicle do
   @doc """
   Gets a list of all the vehicles for the account. Does not require any of the vehicles to be awake.
   """
-  @spec list(TeslaApi.Auth.t()) :: list(__MODULE__.t())
-  def list(%TeslaApi.Auth{token: token}) do
+  @spec list(Auth.t()) :: {:ok, list(t())} | {:error, Error.t()}
+  def list(%Auth{token: token}) do
     request(:get, "/api/1/vehicles", token)
     |> results()
   end
@@ -38,8 +40,8 @@ defmodule TeslaApi.Vehicle do
   @doc """
   Gets the vehicle data without any extra state data. Requires the vehicle to be awake.
   """
-  @spec get(TeslaApi.Auth.t(), id()) :: __MODULE__.t()
-  def get(%TeslaApi.Auth{token: token}, id) do
+  @spec get(Auth.t(), id()) :: {:ok, t()} | {:error, Error.t()}
+  def get(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}", token)
     |> result()
   end
@@ -48,8 +50,8 @@ defmodule TeslaApi.Vehicle do
   Gets the vehicle with all supporting charge, drive, climate, gui, vehicle state and
   vehicle config data at once. Requires the vehicle to be awake.
   """
-  @spec get_with_state(TeslaApi.Auth.t(), id()) :: __MODULE__.t()
-  def get_with_state(%TeslaApi.Auth{token: token}, id) do
+  @spec get_with_state(Auth.t(), id()) :: {:ok, t()} | {:error, Error.t()}
+  def get_with_state(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/vehicle_data", token)
     |> result()
   end
@@ -57,49 +59,64 @@ defmodule TeslaApi.Vehicle do
   @doc """
   Returns nearby charging sites close to the vehicle.
   """
-  @spec nearby_charging_sites(TeslaApi.Auth.t(), id()) ::
-          TeslaApi.Error.t() | map() | TeslaApi.Error.t()
-  def nearby_charging_sites(%TeslaApi.Auth{token: token}, id) do
+  @spec nearby_charging_sites(Auth.t(), id()) :: {:error, Error.t()} | {:ok, map}
+  def nearby_charging_sites(%Auth{token: token}, id) do
     case request(:get, "/api/1/vehicles/#{id}/nearby_charging_sites", token) do
-      {:ok, %Tesla.Env{body: response}} -> response
-      {:error, e} -> %TeslaApi.Error{env: e}
+      {:ok, %Tesla.Env{body: %{"response" => response}}} -> {:ok, response}
+      {:error, e} -> %Error{env: e}
     end
   end
 
   @doc false
-  @spec results({:ok | :error, Tesla.Env.t()}) :: TeslaApi.Error.t() | list(__MODULE__.t())
+  @spec results({:ok | :error, Tesla.Env.t()}) :: {:error, Error.t()} | {:ok, list(t())}
   def results({:ok, %Tesla.Env{status: status, body: %{"response" => vehicles}}})
       when status >= 200 and status <= 299 do
-    vehicles
-    |> Enum.map(&vehicle_result/1)
+    {:ok, Enum.map(vehicles, &vehicle_result/1)}
   end
 
   def results({:ok, %Tesla.Env{status: 408, body: %{"error" => "vehicle unavailable:" <> _}}}) do
-    %TeslaApi.Error{
-      message: "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
-    }
+    {:error,
+     %Error{
+       message: "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
+     }}
   end
 
   def results({:error, e = %Tesla.Env{}}) do
-    %TeslaApi.Error{message: "An unknown error has occurred.", env: e}
+    {:error, %Error{message: "An unknown error has occurred.", env: e}}
+  end
+
+  def results({:error, :timeout}) do
+    {:error, %Error{error: :timeout, message: "HTTP timeout"}}
   end
 
   @doc false
-  @spec result({:ok | :error, Tesla.Env.t()}) :: TeslaApi.Error.t() | __MODULE__.t()
   def result({:ok, %Tesla.Env{status: status, body: %{"response" => vehicle}}})
       when status >= 200 and status <= 299 do
-    vehicle_result(vehicle)
+    {:ok, vehicle_result(vehicle)}
   end
 
   def result({:ok, %Tesla.Env{status: 408, body: %{"error" => "vehicle unavailable:" <> _}}}) do
-    %TeslaApi.Error{
-      error: :vehicle_unavailable,
-      message: "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
-    }
+    {:error,
+     %Error{
+       error: :vehicle_unavailable,
+       message: "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
+     }}
   end
 
-  def result({:error, e = %Tesla.Env{}}) do
-    %TeslaApi.Error{message: "An unknown error has occurred.", env: e}
+  def result({:ok, %Tesla.Env{status: 504} = e}) do
+    {:error, %Error{error: :timeout, message: "Gateway Timeout", env: e}}
+  end
+
+  def result({kind, e = %Tesla.Env{}}) when kind in [:error, :ok] do
+    {:error, %Error{message: "An unknown error has occurred.", env: e}}
+  end
+
+  def result({:error, :timeout}) do
+    {:error, %Error{error: :timeout, message: "HTTP timeout"}}
+  end
+
+  def result({:error, reason}) do
+    {:error, %Error{message: "An unknown error has occurred: #{reason}"}}
   end
 
   defp vehicle_result(vehicle) do
