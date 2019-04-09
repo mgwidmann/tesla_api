@@ -1,7 +1,7 @@
 defmodule TeslaApi.Vehicle.Command do
   import TeslaApi
 
-  alias TeslaApi.{Auth, Error, Vehicle}
+  alias TeslaApi.{Result, Error, Auth, Vehicle}
 
   @doc """
   Wakes the vehicle asynchronously. Expected to wait a few seconds to a few minutes before other
@@ -373,15 +373,9 @@ defmodule TeslaApi.Vehicle.Command do
     |> result()
   end
 
-  defp result({:ok, %Tesla.Env{}}) do
-    :ok
-  end
-
-  defp result({:error, %Tesla.Env{} = e}) do
-    {:error, %Error{message: "The command did not succeed.", env: e}}
-  end
-
-  defp result({:error, reason}) do
-    {:error, %Error{error: reason}}
+  # TODO how does a failed result look like?
+  # {:error, %Error{message: "The command did not succeed.", env: e}}
+  defp result(response) do
+    with {:ok, _} <- Result.handle(response), do: :ok
   end
 end

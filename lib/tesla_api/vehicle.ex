@@ -1,7 +1,7 @@
 defmodule TeslaApi.Vehicle do
   import TeslaApi
 
-  alias TeslaApi.{Error, Auth}
+  alias TeslaApi.{Result, Error, Auth}
 
   @type id() :: integer()
   @type vehicle_id :: integer()
@@ -34,7 +34,7 @@ defmodule TeslaApi.Vehicle do
   @spec list(Auth.t()) :: {:ok, list(t())} | {:error, Error.t()}
   def list(%Auth{token: token}) do
     request(:get, "/api/1/vehicles", token)
-    |> results()
+    |> result()
   end
 
   @doc """
@@ -68,55 +68,8 @@ defmodule TeslaApi.Vehicle do
   end
 
   @doc false
-  @spec results({:ok | :error, Tesla.Env.t()}) :: {:error, Error.t()} | {:ok, list(t())}
-  def results({:ok, %Tesla.Env{status: status, body: %{"response" => vehicles}}})
-      when status >= 200 and status <= 299 do
-    {:ok, Enum.map(vehicles, &vehicle_result/1)}
-  end
-
-  def results({:ok, %Tesla.Env{status: 408, body: %{"error" => "vehicle unavailable:" <> _}}}) do
-    {:error,
-     %Error{
-       message: "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
-     }}
-  end
-
-  def results({:error, e = %Tesla.Env{}}) do
-    {:error, %Error{message: "An unknown error has occurred.", env: e}}
-  end
-
-  def results({:error, :timeout}) do
-    {:error, %Error{error: :timeout, message: "HTTP timeout"}}
-  end
-
-  @doc false
-  def result({:ok, %Tesla.Env{status: status, body: %{"response" => vehicle}}})
-      when status >= 200 and status <= 299 do
-    {:ok, vehicle_result(vehicle)}
-  end
-
-  def result({:ok, %Tesla.Env{status: 408, body: %{"error" => "vehicle unavailable:" <> _}}}) do
-    {:error,
-     %Error{
-       error: :vehicle_unavailable,
-       message: "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
-     }}
-  end
-
-  def result({:ok, %Tesla.Env{status: 504} = e}) do
-    {:error, %Error{error: :timeout, message: "Gateway Timeout", env: e}}
-  end
-
-  def result({kind, e = %Tesla.Env{}}) when kind in [:error, :ok] do
-    {:error, %Error{message: "An unknown error has occurred.", env: e}}
-  end
-
-  def result({:error, :timeout}) do
-    {:error, %Error{error: :timeout, message: "HTTP timeout"}}
-  end
-
-  def result({:error, reason}) do
-    {:error, %Error{message: "An unknown error has occurred: #{reason}"}}
+  def result(response) do
+    Result.handle(response, &vehicle_result/1)
   end
 
   defp vehicle_result(vehicle) do

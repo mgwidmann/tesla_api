@@ -1,7 +1,7 @@
 defmodule TeslaApi.Vehicle.State do
   import TeslaApi
 
-  alias TeslaApi.{Error, Auth, Vehicle}
+  alias TeslaApi.{Result, Error, Auth, Vehicle}
 
   defmodule Charge do
     defstruct [
@@ -149,7 +149,7 @@ defmodule TeslaApi.Vehicle.State do
   @spec charge_state(Auth.t(), Vehicle.id()) :: {:ok, Charge.t()} | {:error, Error.t()}
   def charge_state(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/data_request/charge_state", token)
-    |> handle_result(&Charge.charge_result/1)
+    |> Result.handle(&Charge.charge_result/1)
   end
 
   defmodule Climate do
@@ -250,7 +250,7 @@ defmodule TeslaApi.Vehicle.State do
   @spec climate_state(Auth.t(), Vehicle.id()) :: {:ok, Climate.t()} | {:error, Error.t()}
   def climate_state(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/data_request/climate_state", token)
-    |> handle_result(&Climate.climate_result/1)
+    |> Result.handle(&Climate.climate_result/1)
   end
 
   defmodule Drive do
@@ -309,7 +309,7 @@ defmodule TeslaApi.Vehicle.State do
   @spec drive_state(Auth.t(), Vehicle.id()) :: {:ok, Drive.t()} | {:error, Error.t()}
   def drive_state(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/data_request/drive_state", token)
-    |> handle_result(&Drive.drive_result/1)
+    |> Result.handle(&Drive.drive_result/1)
   end
 
   defmodule Gui do
@@ -350,7 +350,7 @@ defmodule TeslaApi.Vehicle.State do
   @spec gui_settings(Auth.t(), Vehicle.id()) :: {:ok, Gui.t()} | {:error, Error.t()}
   def gui_settings(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/data_request/gui_state", token)
-    |> handle_result(&Gui.gui_result/1)
+    |> Result.handle(&Gui.gui_result/1)
   end
 
   defmodule VehicleConfig do
@@ -439,7 +439,7 @@ defmodule TeslaApi.Vehicle.State do
   @spec vehicle_config(Auth.t(), Vehicle.id()) :: {:ok, VehicleConfig.t()} | {:error, Error.t()}
   def vehicle_config(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/data_request/vehicle_config", token)
-    |> handle_result(&VehicleConfig.vehicle_config_result/1)
+    |> Result.handle(&VehicleConfig.vehicle_config_result/1)
   end
 
   defmodule VehicleState do
@@ -576,7 +576,7 @@ defmodule TeslaApi.Vehicle.State do
   @spec vehicle_state(Auth.t(), Vehicle.id()) :: {:ok, VehicleState.t()} | {:error, Error.t()}
   def vehicle_state(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/data_request/vehicle_state", token)
-    |> handle_result(&VehicleState.vehicle_state_result/1)
+    |> Result.handle(&VehicleState.vehicle_state_result/1)
   end
 
   @doc """
@@ -584,26 +584,6 @@ defmodule TeslaApi.Vehicle.State do
   @spec mobile_enabled?(Auth.t(), Vehicle.id()) :: {:ok, bool} | {:error, Error.t()}
   def mobile_enabled?(%Auth{token: token}, id) do
     request(:get, "/api/1/vehicles/#{id}/mobile_enabled", token)
-    |> handle_result(& &1)
-  end
-
-  @doc false
-  @spec handle_result({:ok | :error, Tesla.Env.t()}, (any -> any)) ::
-          {:error, Error.t()} | {:ok, any}
-  defp handle_result({:ok, %Tesla.Env{status: status, body: %{"response" => data}}}, transformer)
-       when status >= 200 and status <= 299 do
-    {:ok, transformer.(data)}
-  end
-
-  defp handle_result(
-         {:ok, %Tesla.Env{status: 408, body: %{"error" => "vehicle unavailable:" <> _}}},
-         _
-       ) do
-    message = "Vehicle unavailable. The vehicle must be woken up to make this API call succeed."
-    {:error, %Error{message: message}}
-  end
-
-  defp handle_result({:error, e = %Tesla.Env{}}, _) do
-    {:error, %Error{message: "An unknown error has occurred.", env: e}}
+    |> Result.handle()
   end
 end
