@@ -20,11 +20,15 @@ defmodule TeslaApi.Result do
     {:error, %Error{error: :vehicle_unavailable, message: msg, env: e}}
   end
 
+  def handle({:ok, %Env{status: 500, body: %{"error" => message}} = e}, _) do
+    {:error, %Error{error: :internal, message: message, env: e}}
+  end
+
   def handle({:ok, %Env{status: 504} = e}, _) do
     {:error, %Error{error: :timeout, message: "Gateway Timeout", env: e}}
   end
 
-  def handle({:error, %Env{} = e}, _) do
+  def handle({kind, %Env{} = e}, _) when kind in [:ok, :error] do
     {:error, %Error{error: :unknown, message: "An unknown error has occurred.", env: e}}
   end
 
