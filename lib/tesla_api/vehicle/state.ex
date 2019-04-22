@@ -364,6 +364,7 @@ defmodule TeslaApi.Vehicle.State do
       :exterior_color,
       :has_air_suspension,
       :has_ludicrous_mode,
+      :key_version,
       :motorized_charge_port,
       :perf_config,
       :plg,
@@ -376,6 +377,7 @@ defmodule TeslaApi.Vehicle.State do
       :sun_roof_installed,
       :third_row_seats,
       :timestamp,
+      :trim_badging,
       :wheel_type
     ]
 
@@ -389,6 +391,7 @@ defmodule TeslaApi.Vehicle.State do
             exterior_color: String.t(),
             has_air_suspension: bool(),
             has_ludicrous_mode: bool(),
+            key_version: integer(),
             motorized_charge_port: bool(),
             perf_config: String.t(),
             plg: any(),
@@ -401,6 +404,7 @@ defmodule TeslaApi.Vehicle.State do
             sun_roof_installed: any(),
             third_row_seats: String.t(),
             timestamp: non_neg_integer(),
+            trim_badging: String.t(),
             wheel_type: String.t()
           }
 
@@ -416,6 +420,7 @@ defmodule TeslaApi.Vehicle.State do
         exterior_color: vehicle_config["exterior_color"],
         has_air_suspension: vehicle_config["has_air_suspension"],
         has_ludicrous_mode: vehicle_config["has_ludicrous_mode"],
+        key_version: vehicle_config["key_version"],
         motorized_charge_port: vehicle_config["motorized_charge_port"],
         perf_config: vehicle_config["perf_config"],
         plg: vehicle_config["plg"],
@@ -428,6 +433,7 @@ defmodule TeslaApi.Vehicle.State do
         sun_roof_installed: vehicle_config["sun_roof_installed"],
         third_row_seats: vehicle_config["third_row_seats"],
         timestamp: vehicle_config["timestamp"],
+        trim_badging: vehicle_config["trim_badging"],
         wheel_type: vehicle_config["wheel_type"]
       }
     end
@@ -446,13 +452,16 @@ defmodule TeslaApi.Vehicle.State do
     defstruct [
       :api_version,
       :autopark_state_v3,
+      :autopark_style,
       :calendar_supported,
       :car_version,
       :center_display_state,
       :df,
       :dr,
       :ft,
+      :homelink_nearby,
       :is_user_present,
+      :last_autopark_error,
       :locked,
       :media_state,
       :notifications_supported,
@@ -461,8 +470,10 @@ defmodule TeslaApi.Vehicle.State do
       :pf,
       :pr,
       :remote_start,
+      :remote_start_enabled,
       :remote_start_supported,
       :rt,
+      :sentry_mode,
       :software_update,
       :speed_limit_mode,
       :sun_roof_percent_open,
@@ -476,13 +487,16 @@ defmodule TeslaApi.Vehicle.State do
     @type t :: %__MODULE__{
             api_version: integer(),
             autopark_state_v3: String.t(),
+            autopark_style: String.t(),
             calendar_supported: bool(),
             car_version: String.t(),
             center_display_state: non_neg_integer(),
             df: non_neg_integer(),
             dr: non_neg_integer(),
             ft: non_neg_integer(),
+            homelink_nearby: bool(),
             is_user_present: bool(),
+            last_autopark_error: String.t(),
             locked: bool(),
             media_state: MediaState.t(),
             notifications_supported: bool(),
@@ -491,8 +505,10 @@ defmodule TeslaApi.Vehicle.State do
             pf: non_neg_integer(),
             pr: non_neg_integer(),
             remote_start: bool(),
+            remote_start_enabled: bool(),
             remote_start_supported: bool(),
             rt: non_neg_integer(),
+            sentry_mode: bool(),
             software_update: SoftWareUpdate.t(),
             speed_limit_mode: SpeedLimit.t(),
             sun_roof_percent_open: any(),
@@ -530,13 +546,16 @@ defmodule TeslaApi.Vehicle.State do
       %__MODULE__{
         api_version: vehicle_state["api_version"],
         autopark_state_v3: vehicle_state["autopark_state_v3"],
+        autopark_style: vehicle_state["autopark_style"],
         calendar_supported: vehicle_state["calendar_supported"],
         car_version: vehicle_state["car_version"],
         center_display_state: vehicle_state["center_display_state"],
         df: vehicle_state["df"],
         dr: vehicle_state["dr"],
         ft: vehicle_state["ft"],
+        homelink_nearby: vehicle_state["homelink_nearby"],
         is_user_present: vehicle_state["is_user_present"],
+        last_autopark_error: vehicle_state["last_autopark_error"],
         locked: vehicle_state["locked"],
         media_state: %MediaState{
           remote_control_enabled: vehicle_state["media_state"]["remote_control_enabled"]
@@ -547,6 +566,7 @@ defmodule TeslaApi.Vehicle.State do
         pf: vehicle_state["pf"],
         pr: vehicle_state["pr"],
         remote_start: vehicle_state["remote_start"],
+        remote_start_enabled: vehicle_state["remote_start_enabled"],
         remote_start_supported: vehicle_state["remote_start_supported"],
         rt: vehicle_state["rt"],
         software_update: %SoftwareUpdate{
@@ -564,6 +584,7 @@ defmodule TeslaApi.Vehicle.State do
         sun_roof_state: vehicle_state["sun_roof_state"],
         timestamp: vehicle_state["timestamp"],
         valet_mode: vehicle_state["valet_mode"],
+        sentry_mode: vehicle_state["sentry_mode"],
         valet_pin_needed: vehicle_state["valet_pin_needed"],
         vehicle_name: vehicle_state["vehicle_name"]
       }
