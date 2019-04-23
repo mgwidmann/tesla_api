@@ -6,20 +6,19 @@ defmodule TeslaApi do
   """
 
   @doc false
-  @spec request(:get | :post, Tesla.url(), String.t() | nil, map()) ::
-          {:ok | :error, Tesla.Env.t()}
-  def request(method, url, token, params \\ %{})
+  @spec request(:get | :post, Tesla.url(), list() | map() | nil) :: {:ok | :error, Tesla.Env.t()}
+  def request(method, url, token, params \\ [])
 
-  def request(:get, url, token, params) do
+  def request(:get, url, token, _params) do
     token
     |> client()
-    |> Tesla.get(url, query: Map.to_list(params))
+    |> Tesla.get(url)
   end
 
-  def request(:post, url, token, params) do
+  def request(:post, url, token, params) when is_list(params) or is_map(params) do
     token
     |> client()
-    |> Tesla.post(url, "", query: Map.to_list(params))
+    |> Tesla.post(url, params)
   end
 
   @adapter {Tesla.Adapter.Hackney, [recv_timeout: 30_000]}
