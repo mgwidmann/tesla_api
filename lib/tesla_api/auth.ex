@@ -39,6 +39,23 @@ defmodule TeslaApi.Auth do
     |> handle_response()
   end
 
+  @doc """
+  Revokes an access token
+  """
+  @spec revoke(t()) :: :ok | {:error, Error.t()}
+  def revoke(%Auth{token: token}) do
+    request(:post, "/oauth/revoke", token, %{"token" => token})
+    |> handle_response()
+  end
+
+  defp handle_response({:ok, %Tesla.Env{status: 200, body: body}}) when body == %{} do
+    :ok
+  end
+
+  defp handle_response({:ok, %Tesla.Env{status: 200, body: %{"response" => true}}}) do
+    :ok
+  end
+
   defp handle_response({:ok, %Tesla.Env{status: 200, body: auth}}) do
     {:ok,
      %__MODULE__{
