@@ -27,6 +27,7 @@ defmodule TeslaApi do
     middleware =
       [
         {Tesla.Middleware.BaseUrl, "https://owner-api.teslamotors.com/"},
+        {Tesla.Middleware.Headers, [{"user-agent", "github.com/mgwidmann/tesla_api"}]},
         Tesla.Middleware.JSON
       ] ++
         if(token,
