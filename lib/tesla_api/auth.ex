@@ -67,7 +67,7 @@ defmodule TeslaApi.Auth do
      }}
   end
 
-  defp handle_response({:error, e = %Tesla.Env{}}) do
+  defp handle_response({kind, e = %Tesla.Env{}}) when kind in [:ok, :error] do
     {:error, %Error{error: :authentication_failure, message: "Failed to authenticate.", env: e}}
   end
 
